@@ -83,7 +83,7 @@ document.getElementById("copyBtn").onclick=async()=>{
   setTimeout(()=>document.getElementById("copyStatus").textContent="",2500);
 };
 
-// Tableau de suivi : stockage local + vues jour/semaine/mois
+// Tableau de suivi : saisie libre + stockage local + vues jour/semaine/mois
 (function(){
   const rowsEl = document.getElementById('trackerRows');
   if(!rowsEl) return;
@@ -93,37 +93,57 @@ document.getElementById("copyBtn").onclick=async()=>{
   const clearBtn = document.getElementById('clearTracker');
   const status = document.getElementById('trackerStatus');
   const KEY = 'dsa-tracker-v1';
-  let data = JSON.parse(localStorage.getItem(KEY) || '{}');
+  let data;
+  try { data = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e) { data = {}; }
   let period = periodEl.value;
-  if(!Array.isArray(data[period])) data[period] = [];
+  ['day','week','month'].forEach(p=>{ if(!Array.isArray(data[p])) data[p]=[]; });
 
-  const label = (p, i) => {
-    if(p==='day') return `Jour ${i+1}`;
-    if(p==='week') return `Semaine ${i+1}`;
-    return `Mois ${i+1}`;
-  };
+  const label = (p, i) => p==='day' ? `Jour ${i+1}` : p==='week' ? `Semaine ${i+1}` : `Mois ${i+1}`;
   const blank = (p,i) => ({label:label(p,i), views:'', profile:'', clicks:'', leads:'', calls:'', sales:'', revenue:''});
-  function persist(){ localStorage.setItem(KEY, JSON.stringify(data)); status.textContent='✓ Tableau enregistré localement sur cet appareil.'; }
-  function render(){
-    if(!Array.isArray(data[period])) data[period]=[];
-    rowsEl.innerHTML='';
-    data[period].forEach((r,i)=>{
-      const tr=document.createElement('tr');
-      const fields=[['label','text'],['views','number'],['profile','number'],['clicks','number'],['leads','number'],['calls','number'],['sales','number'],['revenue','number']];
-      fields.forEach(([key,type],idx)=>{
-        const td=document.createElement('td');
-        const input=document.createElement('input'); input.type=type; input.value=r[key] ?? ''; input.placeholder=idx===0?label(period,i):'0';
-        input.addEventListener('input',()=>{r[key]=input.value; persist();});
-        td.appendChild(input); tr.appendChild(td);
-      });
-      const td=document.createElement('td'); const del=document.createElement('button'); del.className='tracker-delete'; del.title='Supprimer'; del.textContent='🗑️';
-      del.onclick=()=>{data[period].splice(i,1);persist();render();}; td.appendChild(del); tr.appendChild(td); rowsEl.appendChild(tr);
-    });
-    if(!data[period].length){ const tr=document.createElement('tr'); tr.innerHTML='<td colspan="9" class="muted">Aucune ligne. Clique sur « Ajouter une ligne » pour commencer.</td>'; rowsEl.appendChild(tr); }
+  function persist(){
+    localStorage.setItem(KEY, JSON.stringify(data));
+    status.textContent='✓ Données enregistrées sur cet appareil.';
   }
-  periodEl.addEventListener('change',()=>{period=periodEl.value;if(!Array.isArray(data[period]))data[period]=[];render();persist();});
-  addBtn.addEventListener('click',()=>{data[period].push(blank(period,data[period].length));persist();render();});
+  function addField(tr, key, type, placeholder, extraClass=''){
+    const td=document.createElement('td');
+    const input=document.createElement('input');
+    input.type=type;
+    input.inputMode=type==='number'?'numeric':'text';
+    input.value=data[period][tr.dataset.index]?.[key] ?? '';
+    input.placeholder=placeholder;
+    if(extraClass) input.className=extraClass;
+    input.addEventListener('input',()=>{
+      data[period][Number(tr.dataset.index)][key]=input.value;
+      localStorage.setItem(KEY, JSON.stringify(data));
+      status.textContent='✓ Modifications enregistrées automatiquement.';
+    });
+    td.appendChild(input); tr.appendChild(td);
+  }
+  function render(){
+    rowsEl.innerHTML='';
+    if(!data[period].length){
+      const tr=document.createElement('tr');
+      tr.innerHTML='<td colspan="9" class="muted">Clique sur « ＋ Ajouter une ligne » pour commencer à remplir ton suivi.</td>';
+      rowsEl.appendChild(tr); return;
+    }
+    data[period].forEach((r,i)=>{
+      const tr=document.createElement('tr'); tr.dataset.index=i;
+      addField(tr,'label', 'text', label(period,i), 'tracker-period-input');
+      addField(tr,'views','number','0'); addField(tr,'profile','number','0'); addField(tr,'clicks','number','0');
+      addField(tr,'leads','number','0'); addField(tr,'calls','number','0'); addField(tr,'sales','number','0'); addField(tr,'revenue','number','0');
+      const td=document.createElement('td');
+      const del=document.createElement('button'); del.className='tracker-delete'; del.title='Supprimer cette ligne'; del.textContent='🗑️';
+      del.onclick=()=>{data[period].splice(i,1);persist();render();};
+      td.appendChild(del); tr.appendChild(td); rowsEl.appendChild(tr);
+    });
+  }
+  periodEl.addEventListener('change',()=>{ period=periodEl.value; render(); });
+  addBtn.addEventListener('click',()=>{ data[period].push(blank(period,data[period].length)); persist(); render(); setTimeout(()=>rowsEl.parentElement.scrollLeft=rowsEl.parentElement.scrollWidth,50); });
   saveBtn.addEventListener('click',persist);
-  clearBtn.addEventListener('click',()=>{if(confirm('Supprimer toutes les données du tableau ?')){data[period]=[];persist();render();}});
+  clearBtn.addEventListener('click',()=>{
+    if(confirm(`Supprimer toutes les données de la vue ${period === 'day' ? 'jour' : period === 'week' ? 'semaine' : 'mois'} ?`)){
+      data[period]=[]; persist(); render();
+    }
+  });
   render();
 })();
