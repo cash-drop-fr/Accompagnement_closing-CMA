@@ -47,9 +47,16 @@ footer{max-width:1180px;margin:70px auto 0;padding:30px 48px;border-top:1px soli
 .tracker-toolbar select { min-width:130px; }
 .tracker-status { margin-bottom:14px; font-size:.85rem; color:var(--muted); }
 .tracker-table-wrap { overflow-x:auto; }
-.tracker-table input { width:100%; min-width:90px; box-sizing:border-box; }
-.tracker-table th, .tracker-table td { white-space:nowrap; }
-.tracker-delete { border:0; background:transparent; cursor:pointer; font-size:1.05rem; }
+.tracker-table { width:100%; border-collapse:separate; border-spacing:0; min-width:900px; }
+.tracker-table th, .tracker-table td { white-space:nowrap; padding:10px; border-bottom:1px solid var(--line); }
+.tracker-table th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+.tracker-table td { vertical-align:middle; }
+.tracker-table input { width:100%; min-width:95px; height:42px; box-sizing:border-box; padding:10px 11px; border:1px solid var(--line); border-radius:10px; background:var(--surface2); color:var(--text); outline:none; font:inherit; }
+.tracker-table input:focus { border-color:var(--accent2); box-shadow:0 0 0 3px rgba(139,92,246,.12); }
+.tracker-table input[type=number] { min-width:80px; }
+.tracker-table .tracker-period-input { min-width:150px; }
+.tracker-delete { border:0; background:transparent; cursor:pointer; font-size:1.05rem; padding:8px; border-radius:8px; }
+.tracker-delete:hover { background:var(--surface2); }
 .tutorial-card { padding:24px; display:flex; justify-content:space-between; gap:20px; align-items:center; }
 .tutorial-card h3 { margin:.35rem 0 .5rem; }
 .tutorial-card p { margin:0; color:var(--muted); }
