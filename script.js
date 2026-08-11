@@ -82,3 +82,48 @@ document.getElementById("copyBtn").onclick=async()=>{
   document.getElementById("copyStatus").textContent="✓ Message copié dans le presse-papiers";
   setTimeout(()=>document.getElementById("copyStatus").textContent="",2500);
 };
+
+// Tableau de suivi : stockage local + vues jour/semaine/mois
+(function(){
+  const rowsEl = document.getElementById('trackerRows');
+  if(!rowsEl) return;
+  const periodEl = document.getElementById('trackerPeriod');
+  const addBtn = document.getElementById('addTrackerRow');
+  const saveBtn = document.getElementById('saveTracker');
+  const clearBtn = document.getElementById('clearTracker');
+  const status = document.getElementById('trackerStatus');
+  const KEY = 'dsa-tracker-v1';
+  let data = JSON.parse(localStorage.getItem(KEY) || '{}');
+  let period = periodEl.value;
+  if(!Array.isArray(data[period])) data[period] = [];
+
+  const label = (p, i) => {
+    if(p==='day') return `Jour ${i+1}`;
+    if(p==='week') return `Semaine ${i+1}`;
+    return `Mois ${i+1}`;
+  };
+  const blank = (p,i) => ({label:label(p,i), views:'', profile:'', clicks:'', leads:'', calls:'', sales:'', revenue:''});
+  function persist(){ localStorage.setItem(KEY, JSON.stringify(data)); status.textContent='✓ Tableau enregistré localement sur cet appareil.'; }
+  function render(){
+    if(!Array.isArray(data[period])) data[period]=[];
+    rowsEl.innerHTML='';
+    data[period].forEach((r,i)=>{
+      const tr=document.createElement('tr');
+      const fields=[['label','text'],['views','number'],['profile','number'],['clicks','number'],['leads','number'],['calls','number'],['sales','number'],['revenue','number']];
+      fields.forEach(([key,type],idx)=>{
+        const td=document.createElement('td');
+        const input=document.createElement('input'); input.type=type; input.value=r[key] ?? ''; input.placeholder=idx===0?label(period,i):'0';
+        input.addEventListener('input',()=>{r[key]=input.value; persist();});
+        td.appendChild(input); tr.appendChild(td);
+      });
+      const td=document.createElement('td'); const del=document.createElement('button'); del.className='tracker-delete'; del.title='Supprimer'; del.textContent='🗑️';
+      del.onclick=()=>{data[period].splice(i,1);persist();render();}; td.appendChild(del); tr.appendChild(td); rowsEl.appendChild(tr);
+    });
+    if(!data[period].length){ const tr=document.createElement('tr'); tr.innerHTML='<td colspan="9" class="muted">Aucune ligne. Clique sur « Ajouter une ligne » pour commencer.</td>'; rowsEl.appendChild(tr); }
+  }
+  periodEl.addEventListener('change',()=>{period=periodEl.value;if(!Array.isArray(data[period]))data[period]=[];render();persist();});
+  addBtn.addEventListener('click',()=>{data[period].push(blank(period,data[period].length));persist();render();});
+  saveBtn.addEventListener('click',persist);
+  clearBtn.addEventListener('click',()=>{if(confirm('Supprimer toutes les données du tableau ?')){data[period]=[];persist();render();}});
+  render();
+})();
